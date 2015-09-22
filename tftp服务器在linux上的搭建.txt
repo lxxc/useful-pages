@@ -1,0 +1,53 @@
+
+1.检查Linux 服务器是否已经安装TFTP 服务器，在控制台执行以下命令检查：
+[root@localhost Server]# rpm –q tftp-server 
+
+2.若提示没有安装，在Redhat Enterprise Linux 5的安装光盘中有RPM安装包。在VM中用虚拟光驱打开ISO镜像文件后，可以在Server目录中找到相应的安装包。
+xinetd-2.3.14-10.el5.i386.rpm  
+tftp-0.42-3.1.i386.rpm  tftp-server-0.42-3.1.i386.rpm
+
+
+3.修改文件在linux下，不管使用的是哪一种super-server，inetd或者xinetd，默认情况下TFTP服务是禁用的，所以要修改文件来开启服务。
+根据（1）的安装方法，可以修改文件/etc/xinetd.d/tftp。主要是设置TFTP服务器的根目录，开启服务。
+修改后的文件如下：
+service tftp {    
+socket_type            =dgram       
+protocol               =udp       
+wait                   =yes       
+user                   =root       
+server                 =/usr/sbin/in.tftpd       
+server_args            =-s /home/app -c       
+disable                =no       
+per_source             =11       
+cps                    =100 2       
+flags                  =IPv4
+}
+说明：修改项server_args= -s -c，其中/home/app可以改为你的tftp-server的根目录，参数-s指定chroot，-c指定了可以创建文件。
+
+
+4.创建tftp根目录，关闭防火墙，启动tftp-server。
+#mkdir /home/app
+#chmod o+w       /home/app
+#/etc/init.d/iptables stop        //关闭防火墙
+#service xinetd restart          //重启 xinetd 服务
+
+使用命令:netstat -au | grep tftp,已确认tftp服务是否已经开启，如下所示：
+udp        0      0 *:tftp                      *:*       
+说明已经开启服务
+
+
+5.本机测试tftp服务器的功能。
+    首先，在/home/app目录下使用命令：vi test创建一个文档test，并向其中写入“hello tftp”
+   通过命令:tftp “本机IP地址”,进入tftp命令模式，输入help命令，查看tftp支持的命令。通过命令： get test,可以将/home/app的文件下载到当前目录下(这里是/home)下，这就完成了在本机上测试tftp服务器的功能。
+
+如果连接超时检查selinux是否阻止了连接
+
+********关闭SELinux的方法：********
+
+vim /etc/selinux/config
+---------------------------
+SELINUX=enforcing
+注释掉该行，添加：
+SELINUX=disabled
+**********************************
+重启系统。OK！
