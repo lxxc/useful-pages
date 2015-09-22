@@ -1,0 +1,39 @@
+1     首先坚持是否安装了minicom
+
+        输入命令   minicom   -s
+
+        如出现配置信息列表，则表示系统已安装
+
+        如出现 bash 没有这个命令等情况，需要手动安装
+
+2     在安装光盘中找到如下软件包
+
+       lrzsz-0.12.20-27.1.el6.i686.rpm
+
+       minicom-2.3.6.el6.i686.rpm
+
+       使用命令  
+
+            rpm    -ivh      lrzsz-0.12.20-27.1.el6.i686.rpm
+
+             rpm    -ivh     minicom-2.3.6.el6.i686.rpm
+
+    （ 光盘自带的，随系统版本不同有所变化）
+
+3   安装完毕后，输入minicom -s  进行配置
+
+      进入Serial port setup
+      输入选项字母将
+      第一项改成 A—Serial Device : /dev/ttyUSB0                    （USB转串口）
+      第二项：B—lockfile Location: /var/lock
+      第五项：E—Bps/par/Bits :57600(这里要注重，这个值要改成你的连接的设备的波特率）（开发板的波特率）
+      第七项：F—Hardware Flow Control: no
+      然后退出进入Modem and dialing
+      将A—initing string B－Rest string K－Hang-up string 这三项的值去掉。
+      然后退出选择 Save as df1,然后选择EXIT from MINICOM 到这里的终端已经设置好了。
+
+4    配置完后,接上USB转串口线，输入minicom,显示连接成功信息。
+
+ 
+
+5   完毕
