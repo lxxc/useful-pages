@@ -1,141 +1,178 @@
-�������İ�װ������
-1���鿴ϵͳ�Ƿ��Ѱ�װNFS
+服务器的安装与配置
+1、查看系统是否已安装NFS
 [root@localhost nfs]# rpm -qa|grep nfs
 nfs-utils-lib-1.0.8-7.6.el5
 nfs-utils-1.0.9-42.el5
 [root@localhost nfs]# rpm -qa|grep portmap
 portmap-4.0-65.2.2.1
 
-2�������ǰϵͳ��û�а�װNFS���������������Ҫ�ֹ����а�װ��nfs-utils ��portmap �������İ�װ�ļ���ϵͳ�����ж����С�
+2、如果当前系统中没有安装NFS所需的软件包，需要手工进行安装。nfs-utils 和portmap 两个包的安装文件在系统光盘中都会有。
 # mount /dev/cdrom /mnt/cdrom/
 # cd /mnt/cdrom/CentOS/
 # rpm -ivh portmap-4.0-65.2.2.1.i386.rpm 
 # rpm -ivh nfs-utils-1.0.9-50.el5.i386.rpm
 # rpm -q nfs-utils portmap
 
-3.NFS��������������ԱȽϼ򵥣�ֻ��Ҫ����Ӧ�������ļ��н������ã�Ȼ������NFS���������ɡ�
+3.NFS服务器的配置相对比较简单，只需要在相应的配置文件中进行设置，然后启动NFS服务器即可。
 
-NFS�ĳ���Ŀ¼
+NFS的常用目录
 
-/etc/exports                           NFS�������Ҫ�����ļ�
-/usr/sbin/exportfs                   NFS����Ĺ�������
-/usr/sbin/showmount              �ͻ��˵Ĳ鿴����
-/var/lib/nfs/etab                      ��¼NFS����������Ŀ¼������Ȩ���趨ֵ
-/var/lib/nfs/xtab                      ��¼������¼���Ŀͻ�����Ϣ
-NFS����������ļ�Ϊ /etc/exports������ļ���NFS����Ҫ�����ļ�������ϵͳ��û��Ĭ��ֵ����������ļ���һ������ڣ�����Ҫʹ��vim�ֶ�������Ȼ�����ļ�����д���������ݡ�
+/etc/exports                           NFS服务的主要配置文件
+/usr/sbin/exportfs                   NFS服务的管理命令
+/usr/sbin/showmount              客户端的查看命令
+/var/lib/nfs/etab                      记录NFS分享出来的目录的完整权限设定值
+/var/lib/nfs/xtab                      记录曾经登录过的客户端信息
+NFS服务的配置文件为 /etc/exports，这个文件是NFS的主要配置文件，不过系统并没有默认值，所以这个文件不一定会存在，可能要使用vim手动建立，然后在文件里面写入配置内容。
 
-/etc/exports�ļ����ݸ�ʽ��
+/etc/exports文件内容格式：
 
-<���Ŀ¼> [�ͻ���1 ѡ�����Ȩ��,�û�ӳ��,������] [�ͻ���2 ѡ�����Ȩ��,�û�ӳ��,������]
-a. ���Ŀ¼��
+<输出目录> [客户端1 选项（访问权限,用户映射,其他）] [客户端2 选项（访问权限,用户映射,其他）]
+a. 输出目录：
 
-���Ŀ¼��ָNFSϵͳ����Ҫ�������ͻ���ʹ�õ�Ŀ¼��
+输出目录是指NFS系统中需要共享给客户机使用的目录；
 
-b. �ͻ��ˣ�
+b. 客户端：
 
-�ͻ�����ָ�����п��Է������NFS���Ŀ¼�ļ����
+客户端是指网络中可以访问这个NFS输出目录的计算机
 
-�ͻ��˳��õ�ָ����ʽ
+客户端常用的指定方式
 
-ָ��ip��ַ��������192.168.0.200
-ָ�������е�����������192.168.0.0/24 192.168.0.0/255.255.255.0
-ָ��������������david.bsmart.cn
-ָ�����е�����������*.bsmart.cn
-����������*
-c. ѡ�
+指定ip地址的主机：192.168.0.200
+指定子网中的所有主机：192.168.0.0/24 192.168.0.0/255.255.255.0
+指定域名的主机：david.bsmart.cn
+指定域中的所有主机：*.bsmart.cn
+所有主机：*
+c. 选项：
 
-ѡ�������������Ŀ¼�ķ���Ȩ�ޡ��û�ӳ��ȡ�
+选项用来设置输出目录的访问权限、用户映射等。
 
-NFS��Ҫ��3��ѡ�
+NFS主要有3类选项：
 
-����Ȩ��ѡ��
+访问权限选项
 
-�������Ŀ¼ֻ����ro
-�������Ŀ¼��д��rw
-�û�ӳ��ѡ��
+设置输出目录只读：ro
+设置输出目录读写：rw
+用户映射选项
 
-all_squash����Զ�̷��ʵ�������ͨ�û��������鶼ӳ��Ϊ�����û����û��飨nfsnobody����
-no_all_squash����all_squashȡ����Ĭ�����ã���
-root_squash����root�û��������鶼ӳ��Ϊ�����û����û��飨Ĭ�����ã���
-no_root_squash����rootsquashȡ����
-anonuid=xxx����Զ�̷��ʵ������û���ӳ��Ϊ�����û�����ָ�����û�Ϊ�����û���UID=xxx����
-anongid=xxx����Զ�̷��ʵ������û��鶼ӳ��Ϊ�����û����˻�����ָ���������û����˻�Ϊ�����û����˻���GID=xxx����
-����ѡ��
+all_squash：将远程访问的所有普通用户及所属组都映射为匿名用户或用户组（nfsnobody）；
+no_all_squash：与all_squash取反（默认设置）；
+root_squash：将root用户及所属组都映射为匿名用户或用户组（默认设置）；
+no_root_squash：与rootsquash取反；
+anonuid=xxx：将远程访问的所有用户都映射为匿名用户，并指定该用户为本地用户（UID=xxx）；
+anongid=xxx：将远程访问的所有用户组都映射为匿名用户组账户，并指定该匿名用户组账户为本地用户组账户（GID=xxx）；
+其它选项
 
-secure�����ƿͻ���ֻ�ܴ�С��1024��tcp/ip�˿�����nfs��������Ĭ�����ã���
-insecure�������ͻ��˴Ӵ���1024��tcp/ip�˿����ӷ�������
-sync��������ͬ��д���ڴ滺����������У�Ч�ʵͣ������Ա�֤���ݵ�һ���ԣ�
-async���������ȱ������ڴ滺�����У���Ҫʱ��д����̣�
-wdelay������Ƿ�����ص�д���������������Щд����һ��ִ�У������������Ч�ʣ�Ĭ�����ã���
-no_wdelay������д����������ִ�У�Ӧ��sync���ʹ�ã�
-subtree�������Ŀ¼��һ����Ŀ¼����nfs������������丸Ŀ¼��Ȩ��(Ĭ������)��
-no_subtree����ʹ���Ŀ¼��һ����Ŀ¼��nfs������Ҳ������丸Ŀ¼��Ȩ�ޣ������������Ч�ʣ�
+secure：限制客户端只能从小于1024的tcp/ip端口连接nfs服务器（默认设置）；
+insecure：允许客户端从大于1024的tcp/ip端口连接服务器；
+sync：将数据同步写入内存缓冲区与磁盘中，效率低，但可以保证数据的一致性；
+async：将数据先保存在内存缓冲区中，必要时才写入磁盘；
+wdelay：检查是否有相关的写操作，如果有则将这些写操作一起执行，这样可以提高效率（默认设置）；
+no_wdelay：若有写操作则立即执行，应与sync配合使用；
+subtree：若输出目录是一个子目录，则nfs服务器将检查其父目录的权限(默认设置)；
+no_subtree：即使输出目录是一个子目录，nfs服务器也不检查其父目录的权限，这样可以提高效率；
 
 
-4.���õ�ʵ��:
- a). /tmp *(rw,no_root_squash)  //*�ű�ʾ���е�IP�����Է���
+4.设置的实例:
+ a). /tmp *(rw,no_root_squash)  //*号表示所有的IP都可以访问
  b). /tmp *(rw)
-  /home/public 192.168.0.*(rw) *(ro)  //������������һ��
+  /home/public 192.168.0.*(rw) *(ro)  //下面两行作用一样
   /home/public 192.168.0.0/24(rw) *(ro)
- c). /home/test 192.168.0.100(rw) //ֻ��ĳ����������Ȩ��
- d). /home/linux *.linux.org(rw,all_squash,anonuid=40,anongid=40) //�� *.linux.org��½��NFS������������/home/linux����д�뵵��ʱ���õ������������������飬�ͻ���/etc/passwd����� Ӧ��UIDΪ40���Ǹ����ݵ�ʹ������.
+ c). /home/test 192.168.0.100(rw) //只对某部机器设置权限
+ d). /home/linux *.linux.org(rw,all_squash,anonuid=40,anongid=40) //当 *.linux.org登陆此NFS主机，并且在/home/linux下面写入档案时，该档案的所有人与所有组，就会变成/etc/passwd里面对 应的UID为40的那个身份的使用者了.
  
-5.Ȩ������
-����/etc/exports���������Ϊ
+5.权限问题
+假设/etc/exports里面的内容为
  #vi /etc/exports
  /tmp *(rw,no_root_squash)
  /home/public 192.168.0.*(rw) *(ro)
  /home/test 192.168.0.100(rw)
  /home/linux *.linux.org(rw,all_squash,anonuid=40,anongid=40)
- ����������192.168.0.100���client�˵�½��NFS����(192.168.0.2),��ô
- ���һ:��192.168.0.100���ʺ�Ϊtest������ݣ�ͬʱ��NFS������Ҳ��test����ʺ�
-  a).����NFS������/tmpȨ��Ϊ-rwxrwxrwt��������(test��192.168.0.100��)��/tmp������д�ȡ��Ȩ�ޣ�����д�뵵����������Ϊtest.
-  b).��/home/public�У��������ж�д��Ȩ�ޣ����NFS������/home/public���Ŀ¼��Ȩ�޶���test����д��Ļ�����ô �Ϳ��Զ�д������д�뵵������������test�����NFS������/home/public����test���ʹ���߲�û�п���д��Ȩ��ʱ���Ǿ��޷�д�룬�� Ȼ/etc/exports������rw��Ҳ��������.
-  c).��/home/test�У�Ȩ����/home/public����ͬ��״̬����ҪNFS������/home/test����test�п��ŵ�Ȩ��.
-  d).��/home/linux���У������Ǻ��ֵ�user,���ݶ��ᱻ���UID=40������ʺ�
- �����:���������192.168.0.100������Ϊtest2,����NFS����ȴû��test2����ʺ�ʱ
-  a).��/tmp�»��ǿ���д�룬����д��ĵ��������˱��nobody.
-  b).��/home/public��/home/test�����Ƿ����д�룬����Ҫ��/home/public��Ȩ�޶������������ݾͱ����nobody��
-  c)/home/linux�µ����ݻ��Ǳ��UID=40���ʺ�.
- �����:��192.168.0.100������Ϊroot
-  a).��/tmp�������д�룬��������no_root_squash�Ĳ������ı���Ԥ���root_squash���趨ֵ��������/tmpд�뵵����������Ϊroot��.
-  b).��/home/public���µ����ݱ�ѹ������nobody,��ΪԤ������Զ�����root_squash�����Ե��������˾ͱ����nobody.
-  c)./home/test�����/home/public��ͬ.
-  d)./home/linux�У�root������Ҳ��ѹ����UID=40���Ǹ�ʹ������.
+ 假设我们在192.168.0.100这个client端登陆此NFS主机(192.168.0.2),那么
+ 情况一:在192.168.0.100的帐号为test这个身份，同时，NFS主机上也有test这个帐号
+  a).由于NFS主机的/tmp权限为-rwxrwxrwt，所以我(test在192.168.0.100上)在/tmp下面具有存取的权限，并且写入档案的所有人为test.
+  b).在/home/public中，由于我有读写的权限，如果NFS主机在/home/public这个目录的权限对于test开放写入的话，那么 就可以读写，并且写入档案的所有人是test。如果NFS主机的/home/public对于test这个使用者并没有开放写入权限时，那就无法写入，虽 然/etc/exports里面是rw，也不起作用.
+  c).在/home/test中，权限与/home/public有相同的状态，需要NFS主机的/home/test对于test有开放的权限.
+  d).在/home/linux当中，不论是何种的user,身份都会被变成UID=40的这个帐号
+ 情况二:如果我们在192.168.0.100的身份为test2,但是NFS主机却没有test2这个帐号时
+  a).在/tmp下还是可以写入，但是写入的档案所有人变成nobody.
+  b).在/home/public与/home/test里面是否可以写入，还需要看/home/public的权限而定，不过身份就被变成nobody了
+  c)/home/linux下的身份还是变成UID=40的帐号.
+ 情况三:在192.168.0.100的身份为root
+  a).在/tmp里面可以写入，但是由于no_root_squash的参数，改变了预设的root_squash的设定值，所以在/tmp写入档案的所有人为root了.
+  b).在/home/public底下的身份被压缩成了nobody,因为预设的属性都具有root_squash，所以档案所有人就变成了nobody.
+  c)./home/test情况与/home/public相同.
+  d)./home/linux中，root的身份也被压缩成UID=40的那个使用者了.
 
-NFS��������������ֹͣ
+NFS服务器的启动与停止
 
-�ڶ�exports�ļ���������ȷ�����ú󣬾Ϳ�������NFS�������ˡ�
+在对exports文件进行了正确的配置后，就可以启动NFS服务器了。
 
-1������NFS������
+1、启动NFS服务器
 
-Ϊ��ʹNFS��������������������Ҫ����portmap��nfs�������񣬲���portmapһ��Ҫ����nfs������
+为了使NFS服务器能正常工作，需要启动portmap和nfs两个服务，并且portmap一定要先于nfs启动。
 
 # service portmap start
 # service nfs start
-2����ѯNFS������״̬
+2、查询NFS服务器状态
 
 # service portmap status
 # service nfs status  
-3��ֹͣNFS������
+3、停止NFS服务器
 
-ҪֹͣNFS����ʱ����Ҫ��ֹͣnfs������ֹͣportmap���񣬶���ϵͳ������������(��NIS)��Ҫʹ��ʱ������Ҫֹͣportmap����
+要停止NFS运行时，需要先停止nfs服务再停止portmap服务，对于系统中有其他服务(如NIS)需要使用时，不需要停止portmap服务
 
 # service nfs stop
 # service portmap stop
-4������NFS���������Զ�����״̬
+4、设置NFS服务器的自动启动状态
 
-����ʵ�ʵ�Ӧ��ϵͳ��ÿ������LINUXϵͳ���ֹ�����nfs�������ǲ���ʵ�ģ���Ҫ����ϵͳ��ָ�������м����Զ�����portmap��nfs����
+对于实际的应用系统，每次启动LINUX系统后都手工启动nfs服务器是不现实的，需要设置系统在指定的运行级别自动启动portmap和nfs服务。
 
 # chkconfig --list portmap
 # chkconfig --list nfs
 
 5.
-��������ʹ��showmount�����ѯNFS�Ĺ���״̬
-# showmount -e��������//Ĭ�ϲ鿴�Լ������ķ���ǰ����ҪDNS�ܽ����Լ�����Ȼ���ױ���
-# showmount -a��������//��ʾ�Ѿ���ͻ��������ϵ�Ŀ¼��Ϣ
-# showmount -e NFS������IP	//�ͻ���ʹ��showmount�����ѯNFS�Ĺ���״̬
-# mount NFS������IP:����Ŀ¼ ���ع��ص�Ŀ¼	//�ͻ��˹���NFS�������еĹ���Ŀ¼
+服务器端使用showmount命令查询NFS的共享状态
+# showmount -e　　　　//默认查看自己共享的服务，前提是要DNS能解析自己，不然容易报错
+# showmount -a　　　　//显示已经与客户端连接上的目录信息
+# showmount -e NFS服务器IP	//客户端使用showmount命令查询NFS的共享状态
+# mount NFS服务器IP:共享目录 本地挂载点目录	//客户端挂载NFS服务器中的共享目录
 e.g.# mount 192.168.1.108:/home/david/ /tmp/david/
 
-umount /tmp/david/	//ж���ѹ��ص�NFS����Ŀ¼
+umount /tmp/david/	//卸载已挂载的NFS共享目录
+
+其他相关命令
+
+1、exportfs
+
+如果我们在启动了NFS之后又修改了/etc/exports，是不是还要重新启动nfs呢？这个时候我们就可以用exportfs 命令来使改动立刻生效，该命令格式如下：
+
+　　# exportfs [-aruv]
+
+　　-a 全部挂载或卸载 /etc/exports中的内容 
+　　-r 重新读取/etc/exports 中的信息 ，并同步更新/etc/exports、/var/lib/nfs/xtab
+　　-u 卸载单一目录（和-a一起使用为卸载所有/etc/exports文件中的目录）
+　　-v 在export的时候，将详细的信息输出到屏幕上。
+
+具体例子： 
+　　# exportfs -au 卸载所有共享目录
+　　# exportfs -rv 重新共享所有目录并输出详细信息
+
+2、nfsstat
+
+查看NFS的运行状态，对于调整NFS的运行有很大帮助。
+
+3、rpcinfo
+查看rpc执行信息，可以用于检测rpc运行情况的工具，利用rpcinfo -p 可以查看出RPC开启的端口所提供的程序有哪些。
+
+4、showmount
+
+　　-a 显示已经于客户端连接上的目录信息
+　　-e IP或者hostname 显示此IP地址分享出来的目录
+
+5、netstat
+
+可以查看出nfs服务开启的端口，其中nfs 开启的是2049，portmap 开启的是111，其余则是rpc开启的。
+
+最后注意两点，虽然通过权限设置可以让普通用户访问，但是挂载的时候默认情况下只有root可以去挂载，普通用户可以执行sudo。
+
+NFS server 关机的时候一点要确保NFS服务关闭，没有客户端处于连接状态！通过showmount -a 可以查看，如果有的话用kill killall pkill 来结束，（-9 强制结束）
